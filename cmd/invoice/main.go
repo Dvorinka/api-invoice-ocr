@@ -18,7 +18,7 @@ import (
 func main() {
 	logger := log.New(os.Stdout, "[invoice] ", log.LstdFlags)
 
-	port := envString("PORT", "8084")
+	port := envString("PORT", "30008")
 	apiKey := envString("INVOICE_API_KEY", "dev-invoice-key")
 	maxUploadMB := envInt("INVOICE_MAX_UPLOAD_MB", 10)
 
