@@ -1,4 +1,4 @@
-module invoice-ocr
+module apiservices/invoice-ocr
 
 go 1.25.7
 
