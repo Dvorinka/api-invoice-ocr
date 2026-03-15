@@ -1,0 +1,246 @@
+openapi: 3.0.3
+info:
+  title: Invoice OCR API
+  description: API for extracting text and structured data from invoice documents using OCR
+  version: 1.0.0
+  contact:
+    name: API Services
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8084
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+paths:
+  /healthz:
+    get:
+      summary: Health check endpoint
+      description: Returns the health status of the service
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+
+  /v1/invoice/extract:
+    post:
+      summary: Extract data from invoice file
+      description: Upload and extract structured data from an invoice document
+      tags:
+        - Invoice Processing
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Invoice file to process (PDF, PNG, JPG, JPEG, TIFF)
+      responses:
+        '200':
+          description: Successful invoice extraction response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExtractResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /v1/invoice/extract/text:
+    post:
+      summary: Extract data from invoice text
+      description: Extract structured data from raw invoice text content
+      tags:
+        - Invoice Processing
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - text
+              properties:
+                text:
+                  type: string
+                  description: Raw invoice text content
+                  example: "Invoice #12345\nDate: 2023-01-01\nAmount: $100.00"
+      responses:
+        '200':
+          description: Successful text extraction response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ExtractResult'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '405':
+          description: Method not allowed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    ExtractResult:
+      type: object
+      properties:
+        source_filename:
+          type: string
+          description: Original filename of the processed document
+          example: "invoice.pdf"
+        source_content_type:
+          type: string
+          description: MIME type of the source document
+          example: "application/pdf"
+        text_length:
+          type: integer
+          description: Length of extracted text
+          example: 1250
+        used_engine:
+          type: string
+          description: OCR engine used for extraction
+          example: "tesseract"
+        warnings:
+          type: array
+          description: Any warnings during processing
+          items:
+            type: string
+          example: ["low confidence text detected"]
+        invoice_number:
+          type: string
+          description: Extracted invoice number
+          example: "INV-2023-001"
+        supplier_name:
+          type: string
+          description: Extracted supplier/company name
+          example: "Acme Corporation"
+        vat_number:
+          type: string
+          description: Extracted VAT number
+          example: "GB123456789"
+        currency:
+          type: string
+          description: Detected currency
+          example: "USD"
+        total_amount:
+          type: number
+          format: float
+          description: Total invoice amount
+          example: 125.50
+        subtotal_amount:
+          type: number
+          format: float
+          description: Subtotal amount before tax
+          example: 100.00
+        tax_amount:
+          type: number
+          format: float
+          description: Tax amount
+          example: 25.50
+        line_items:
+          type: array
+          description: Extracted line items
+          items:
+            $ref: '#/components/schemas/LineItem'
+        raw_text_preview:
+          type: string
+          description: Preview of extracted raw text
+          example: "Invoice #INV-2023-001\nSupplier: Acme Corporation..."
+
+    LineItem:
+      type: object
+      properties:
+        description:
+          type: string
+          description: Item description
+          example: "Professional Services"
+        quantity:
+          type: number
+          format: float
+          description: Item quantity
+          example: 10.0
+        unit_price:
+          type: number
+          format: float
+          description: Unit price
+          example: 10.00
+        total:
+          type: number
+          format: float
+          description: Total price for this line item
+          example: 100.00
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "file field is required"
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: API key for authentication (format: "Bearer YOUR_API_KEY")
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Invoice Processing
+    description: Invoice OCR and data extraction functionality
